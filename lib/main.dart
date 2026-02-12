@@ -132,7 +132,7 @@ class _OverlayAppState extends State<OverlayApp> {
     super.initState();
 
     // Dengarkan pesan dari main app
-    FlutterOverlayWindow.overlayListener?.listen((event) {
+    FlutterOverlayWindow.overlayListener.listen((event) {
       if (event is String && event.startsWith('mode:')) {
         setState(() {
           _mode = event.split(':')[1];

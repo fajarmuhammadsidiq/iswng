@@ -1,11 +1,19 @@
 # ISWNG
 
+[![CI](https://github.com/fajarmuhammadsidiq/iswng/actions/workflows/ci.yml/badge.svg)](https://github.com/fajarmuhammadsidiq/iswng/actions/workflows/ci.yml)
+[![Flutter](https://img.shields.io/badge/Flutter-3.24.3-02569B?logo=flutter&logoColor=white)](https://flutter.dev/)
+[![Dart](https://img.shields.io/badge/Dart-3.5.3-0175C2?logo=dart&logoColor=white)](https://dart.dev/)
+
 ISWNG adalah project Flutter yang saat ini berfokus pada:
 
 - utilitas **overlay tester** untuk uji perilaku sentuhan (tapjacking scenario)
 - modul **memory game** bertema konten islami
 
 Repository ini masih aktif dikembangkan, namun sudah memiliki fondasi testing unit untuk logic game.
+
+## Preview
+
+![ISWNG Preview](docs/screenshots/readme-preview.png)
 
 ## Fitur Utama
 
