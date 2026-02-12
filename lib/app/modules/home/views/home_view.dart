@@ -1,9 +1,8 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 
 import 'package:get/get.dart';
 
+import '../domain/memory_game_engine.dart';
 import '../controllers/home_controller.dart';
 
 // =============== DATA ISLAMI ===============
@@ -24,17 +23,6 @@ final Map<String, List<String>> islamicCategories = {
   'Nabi & Rasul': ['آدم', 'نوح', 'إبراهيم', 'موسى', 'عيسى', 'محمد'],
   'Rukun Islam': ['الشهادة', 'الصلاة', 'الزكاة', 'الصوم', 'الحج'],
 };
-
-// =============== MODEL ===============
-class CardModel {
-  final String text;
-  bool isFlipped;
-  bool isMatched;
-
-  CardModel(this.text)
-      : isFlipped = false,
-        isMatched = false;
-}
 
 // =============== VIEW ===============
 class HomeView extends GetView<HomeController> {
@@ -140,11 +128,12 @@ class MemoryGameScreen extends StatefulWidget {
 }
 
 class _MemoryGameScreenState extends State<MemoryGameScreen> {
-  List<CardModel> cards = [];
-  List<CardModel> flippedCards = [];
-  int attempts = 0;
-  bool isProcessing = false;
-  int lives = 3; // ❤️ Sistem nyawa
+  late final MemoryGameEngine _engine;
+
+  List<MemoryCard> get cards => _engine.cards;
+  int get attempts => _engine.attempts;
+  bool get isProcessing => _engine.isProcessing;
+  int get lives => _engine.lives;
 
   @override
   void initState() {
@@ -153,67 +142,39 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> {
   }
 
   void _initializeGame() {
-    List<String> items = islamicCategories[widget.category]!;
-    final List<CardModel> tempCards = [];
-    for (String item in items) {
-      tempCards.add(CardModel(item));
-      tempCards.add(CardModel(item));
-    }
-    cards = tempCards..shuffle(Random.secure());
-    flippedCards.clear();
-    attempts = 0;
-    isProcessing = false;
-    lives = 3; // reset nyawa tiap level
+    _engine = MemoryGameEngine(items: islamicCategories[widget.category]!);
   }
 
   void _flipCard(int index) {
-    if (isProcessing || cards[index].isFlipped || cards[index].isMatched)
+    final selection = _engine.flipCard(index);
+    if (!selection.changed) {
       return;
-
-    setState(() {
-      cards[index].isFlipped = true;
-      flippedCards.add(cards[index]);
-    });
-
-    if (flippedCards.length == 2) {
-      setState(() {
-        attempts++;
-        isProcessing = true;
-      });
-
-      Future.delayed(Duration(milliseconds: 600), () {
-        bool isMatch = flippedCards[0].text == flippedCards[1].text;
-
-        if (isMatch) {
-          flippedCards[0].isMatched = true;
-          flippedCards[1].isMatched = true;
-        } else {
-          // ❌ Salah match → kurangi nyawa
-          setState(() {
-            lives--;
-          });
-          // Balik kartu
-          flippedCards[0].isFlipped = false;
-          flippedCards[1].isFlipped = false;
-        }
-
-        setState(() {
-          flippedCards.clear();
-          isProcessing = false;
-
-          // Cek game over
-          if (lives <= 0) {
-            _showGameOver();
-            return;
-          }
-
-          // Cek menang
-          if (cards.every((card) => card.isMatched)) {
-            _showWinDialog();
-          }
-        });
-      });
     }
+
+    setState(() {});
+
+    if (!selection.requiresResolution) {
+      return;
+    }
+
+    Future.delayed(const Duration(milliseconds: 600), () {
+      if (!mounted) {
+        return;
+      }
+      final resolution = _engine.resolveTurn();
+      setState(() {});
+
+      // Cek game over
+      if (resolution.gameOver) {
+        _showGameOver();
+        return;
+      }
+
+      // Cek menang
+      if (resolution.won) {
+        _showWinDialog();
+      }
+    });
   }
 
   void _showGameOver() {
@@ -231,7 +192,9 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> {
             onPressed: () {
               Navigator.of(ctx).pop();
               // 🔜 Nanti: showRewardedAd() → dapat nyawa
-              _initializeGame();
+              setState(() {
+                _engine.reset();
+              });
             },
             child: Text('Coba Lagi'),
           ),
@@ -326,7 +289,7 @@ class _MemoryGameScreenState extends State<MemoryGameScreen> {
 
 // =============== WIDGET KARTU (SAMA SEPERTI SEBELUMNYA) ===============
 class MatchableCard extends StatefulWidget {
-  final CardModel card;
+  final MemoryCard card;
   final VoidCallback onTap;
 
   const MatchableCard({Key? key, required this.card, required this.onTap})
